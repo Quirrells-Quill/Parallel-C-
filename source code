@@ -1,0 +1,159 @@
+#include <stdio.h>
+#include <conio.h>
+#include <iostream>
+#include <iomanip>
+#include <omp.h>
+#include <list>
+#include <utility>
+#include <exception>
+#include<cmath>
+#include <bits/stdc++.h>
+#include <sys/time.h>
+using namespace std;
+
+int z, decs, cons1,cons2, cons3, cons4;
+class Result
+{
+	public:
+	double timestamp, area;
+};
+
+double f(const double x);
+const Result rectangleMethod(const double, const double, const double, const int);
+const Result trapezoidalMethod(const double, const double, const double, const int);
+
+int main()
+{
+	const short maxThreads = 10;
+	short method;
+	double x1, x2, dx;
+    
+
+	cout << fixed << setprecision(8) << endl;
+	try
+	{
+        double coeff;
+        
+		cout<<"Enter the coefficient of x"<<endl;
+        cin>>coeff;		
+            cout<<"Enter the lower and upper limits respectively along with dx.";
+			cout << "   X1: "; cin >> x1;
+			cout << "   X2: "; cin >> x2;
+			cout << "   dx: "; cin >> dx;
+			cout << "   Method (1 - rectangle, 2 - trapezoidal): "; cin >> method;
+			cout<<"1. variable ploynomic fucntion to be integrated"<<endl;
+			cout<<"2. sin(x) function to be integrated"<<endl;
+			cout<<"3. cos(x) function to be integrated"<<endl;
+			cout<<"4. tan(x) function to be integrated"<<endl;
+			cout<<"5.Custom fucntion"<<endl;
+			cin>>decs;
+            cout<<"Enter the power of variable to be raised to:"<<endl;
+            cin>>z;
+			if(decs==5)
+			{
+			cout<<"Enter the constant value in the integration"<<endl;
+            cin>>cons1;
+			cout<<"Enter the trigonometric function to be multiplied with with numerals regarding above menu"<<endl;
+			cin>>cons2;
+			cout<<"Enter the trigonometric power of the funtion"<<endl;
+			cin>>cons4;
+			cout<<"Enter the overall power of the funtion"<<endl;
+			cin>>cons3;
+			}
+
+			list<pair<short, Result>> results;
+			for (int i = 0; i < maxThreads; i++)
+			{
+				Result result = (method == 1) ?
+					rectangleMethod(x1, x2, dx, i + 1) :
+					trapezoidalMethod(x1, x2, dx, i + 1);
+
+				pair<short, Result> s_result(i + 1, result);
+				results.push_back(s_result);
+			}
+
+			cout << endl << "   Results:" << endl;
+			for (auto & result : results)
+			{
+				cout << "   Threads: " << result.first;
+				cout << ", timestamp: " << result.second.timestamp;
+				cout << ", area: " << (result.second.area * coeff) << endl;
+			}
+			cout << endl;
+		
+	}
+	catch (exception & e)
+	{
+		cout << e.what() << endl;
+	}
+	cin.get();
+	return 0;
+}
+
+const Result rectangleMethod(const double x1, const double x2, const double dx, const int nThreads)
+{
+    struct timeval start, end;
+   
+	const int N = static_cast<int>((x2 - x1) / dx);
+	gettimeofday(&start, NULL);
+	double s = 0;
+
+	#pragma omp parallel for num_threads(nThreads) reduction(+: s)
+	for (int i = 1; i <= N; i++) 
+	s += f(x1 + i * dx);
+
+	s *= dx;
+	gettimeofday(&end, NULL);
+    double time_taken;
+ 
+    time_taken = (end.tv_sec - start.tv_sec) * 1e6;
+    time_taken = (time_taken + (end.tv_usec - 
+                              start.tv_usec)) * 1e-6;
+	return { time_taken , s };
+}
+
+const Result trapezoidalMethod(const double x1, const double x2, const double dx, const int nThreads)
+{
+    struct timeval start, end;
+	const int N = static_cast<int>((x2 - x1) / dx);
+    gettimeofday(&start, NULL);
+	double s = 0;
+
+	#pragma omp parallel for num_threads(nThreads) reduction(+: s)
+	for (int i = 1; i < N; i++) 
+	s += f(x1 + i * dx);
+
+	s = (s + (f(x1) + f(x2)) / 2) * dx;
+	gettimeofday(&end, NULL);
+    double time_taken;
+ 
+    time_taken = (end.tv_sec - start.tv_sec) * 1e6;
+    time_taken = (time_taken + (end.tv_usec - 
+                              start.tv_usec)) * 1e-6;
+	return { time_taken , s };
+}
+
+double f(const double x )
+{    
+	if(decs==1)
+	return(pow(x,z));
+	else if( decs==2)
+	return (pow(sin(x),z));
+	else if( decs==3)
+	return (pow(cos(x),z));
+	else if( decs==4)
+	return (pow(tan(x),z));
+	else if (decs==5)
+	{
+		if(cons2==2)
+		return pow((pow(x,z) *pow(sin(x), cons4)- cons1),cons3);
+		if(cons2==3)
+		return pow((pow(x,z) *pow(cos(x), cons4)- cons1),cons3);
+		if(cons2==4)
+		return pow((pow(x,z) *pow(tan(x), cons4)- cons1),cons3);
+	}
+	return 0;
+
+
+    
+}
